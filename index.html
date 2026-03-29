@@ -23,32 +23,29 @@ h1 { color: #58a6ff; margin-bottom: 4px; font-size: 1.6em; }
 .summary .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 16px; flex: 1; min-width: 120px; }
 .summary .card .label { color: #8b949e; font-size: 11px; text-transform: uppercase; }
 .summary .card .value { color: #58a6ff; font-size: 1.3em; font-weight: 600; margin-top: 2px; }
-.tx-list { display: flex; flex-direction: column; gap: 6px; }
-.tx { display: flex; align-items: center; padding: 12px 16px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; gap: 12px; }
-.tx:hover { border-color: #484f58; }
-.tx .direction { width: 50px; text-align: center; font-weight: 700; font-size: 13px; border-radius: 4px; padding: 2px 0; }
-.tx .direction.in { color: #3fb950; background: #0d2818; }
-.tx .direction.out { color: #f85149; background: #2d1215; }
-.tx .amount { width: 180px; min-width: 180px; max-width: 180px; flex-shrink: 0; text-align: right; font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tx-hash { color: #8b949e; text-decoration: none; font-family: monospace; font-size: 11px; }
-.tx-hash:hover { color: #58a6ff; text-decoration: underline; }
-.tx .amount.near { color: #79c0ff; }
-.tx .amount.usdc { color: #3fb950; }
-.tx .amount.other { color: #d2a8ff; }
-.tx .details { flex: 1; min-width: 0; }
-.tx .details .type { color: #8b949e; font-size: 12px; }
-.tx .details .account { color: #c9d1d9; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tx .details .account.named { color: #58a6ff; }
-.tx .usd { color: #8b949e; font-size: 12px; min-width: 70px; text-align: right; }
+.op-list { display: flex; flex-direction: column; gap: 6px; }
+.op { display: flex; align-items: center; padding: 12px 16px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; gap: 12px; }
+.op:hover { border-color: #484f58; }
+.op .op-type { width: 80px; min-width: 80px; text-align: center; font-weight: 700; font-size: 12px; border-radius: 4px; padding: 4px 0; text-transform: uppercase; }
+.op .op-type.swap { color: #d2a8ff; background: #1c1530; }
+.op .op-type.deposit { color: #3fb950; background: #0d2818; }
+.op .op-type.withdraw { color: #f85149; background: #2d1215; }
+.op .op-amount { flex: 1; min-width: 0; }
+.op .op-amount .main { font-weight: 600; font-size: 15px; white-space: nowrap; }
+.op .op-amount .main .out-token { color: #f85149; }
+.op .op-amount .main .in-token { color: #3fb950; }
+.op .op-amount .main .arrow { color: #484f58; margin: 0 6px; }
+.op .op-amount .main .single { color: #79c0ff; }
+.op .op-meta { color: #8b949e; font-size: 12px; margin-top: 2px; }
+.op .op-meta a { color: #8b949e; text-decoration: none; font-family: monospace; font-size: 11px; }
+.op .op-meta a:hover { color: #58a6ff; text-decoration: underline; }
+.op .op-usd { color: #8b949e; font-size: 12px; min-width: 70px; text-align: right; white-space: nowrap; }
 .loading { text-align: center; padding: 40px; color: #8b949e; }
-.error { text-align: center; padding: 20px; color: #f85149; background: #2d1215; border-radius: 8px; }
-.load-more { text-align: center; margin-top: 16px; }
-.load-more button { padding: 10px 32px; background: #21262d; border: 1px solid #30363d; border-radius: 8px; color: #8b949e; cursor: pointer; }
 .footer { text-align: center; margin-top: 32px; padding-top: 16px; border-top: 1px solid #30363d; color: #484f58; font-size: 12px; }
 .footer a { color: #58a6ff; text-decoration: none; }
 @media (max-width: 600px) {
-  .tx { flex-wrap: wrap; }
-  .tx .amount { min-width: auto; }
+  .op { flex-wrap: wrap; }
+  .op .op-type { width: auto; min-width: auto; }
   .summary { flex-direction: column; }
 }
 </style>
@@ -56,8 +53,8 @@ h1 { color: #58a6ff; margin-bottom: 4px; font-size: 1.6em; }
 <body>
 <div class="container">
   <h1>NEAR Intents Explorer</h1>
-  <p class="subtitle">Deposits, withdrawals, and swaps through NEAR Intents</p>
-  
+  <p class="subtitle">Swaps, deposits, and withdrawals through NEAR Intents</p>
+
   <div class="search-box">
     <input type="text" id="account" placeholder="Enter NEAR account (e.g. zavodil.near)" />
     <button id="searchBtn" onclick="search()">Search</button>
@@ -65,29 +62,22 @@ h1 { color: #58a6ff; margin-bottom: 4px; font-size: 1.6em; }
 
   <div class="filters" id="filters" style="display:none">
     <button class="active" data-filter="all" onclick="setFilter('all',this)">All</button>
-    <button data-filter="near" onclick="setFilter('near',this)">NEAR/wNEAR</button>
-    <button data-filter="usdc" onclick="setFilter('usdc',this)">USDC</button>
-    <button data-filter="usdt" onclick="setFilter('usdt',this)">USDT</button>
-    <button data-filter="ft" onclick="setFilter('ft',this)">Other</button>
-    <button data-filter="in" onclick="setFilter('in',this)">In</button>
-    <button data-filter="out" onclick="setFilter('out',this)">Out</button>
+    <button data-filter="swap" onclick="setFilter('swap',this)">Swaps</button>
+    <button data-filter="deposit" onclick="setFilter('deposit',this)">Deposits</button>
+    <button data-filter="withdraw" onclick="setFilter('withdraw',this)">Withdrawals</button>
   </div>
 
   <div class="summary" id="summary" style="display:none">
-    <div class="card"><div class="label">Intents Ops</div><div class="value" id="txCount">0</div></div>
-    <div class="card"><div class="label">NEAR In</div><div class="value" id="nearIn">0</div></div>
-    <div class="card"><div class="label">NEAR Out</div><div class="value" id="nearOut">0</div></div>
-    <div class="card"><div class="label">USDC In</div><div class="value" id="usdcIn">$0</div></div>
+    <div class="card"><div class="label">Operations</div><div class="value" id="opsCount">0</div></div>
+    <div class="card"><div class="label">Swaps</div><div class="value" id="swapsCount">0</div></div>
+    <div class="card"><div class="label">Total USD Volume</div><div class="value" id="totalUsd">$0</div></div>
   </div>
 
   <div id="results"></div>
-  <div class="load-more" id="loadMore" style="display:none">
-    <button onclick="loadMore()">Load more</button>
-  </div>
 
   <div class="footer">
-    Built by <a href="https://near.fm/profile/cf847e7565b443ea0535ac21e14f042875d1be3d18b886077227d6f520d450a2">Rock Lover</a> · 
-    <a href="https://github.com/rock-lover/near-intents-explorer">GitHub</a> · 
+    Built by <a href="https://near.fm/profile/cf847e7565b443ea0535ac21e14f042875d1be3d18b886077227d6f520d450a2">Rock Lover</a> ·
+    <a href="https://github.com/rock-lover/near-intents-explorer">GitHub</a> ·
     Powered by <a href="https://transfers.main.fastnear.com">FastNear Transfers API</a>
   </div>
 </div>
@@ -95,57 +85,36 @@ h1 { color: #58a6ff; margin-bottom: 4px; font-size: 1.6em; }
 <script>
 const API = 'https://transfers.main.fastnear.com/v0/transfers';
 let allTransfers = [];
+let operations = [];
 let resumeToken = null;
 let currentAccount = '';
 let currentFilter = 'all';
+let loading = false;
 
 function isNamed(acc) { return acc && acc.includes('.'); }
 
-function getAssetLabel(t) {
-  const id = t.asset_id || '';
-  if (id === 'native:near') return 'NEAR';
-  if (id.includes('17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1')) return 'USDC';
-  if (id.includes('usdt.tether-token.near')) return 'USDT';
-  if (id.includes('wrap.near')) return 'wNEAR';
-  const match = id.match(/nep141:(.+)/);
+function getAssetLabel(assetId) {
+  if (!assetId) return '?';
+  if (assetId.includes('17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1')) return 'USDC';
+  if (assetId.includes('usdt.tether-token.near')) return 'USDT';
+  if (assetId.includes('wrap.near')) return 'wNEAR';
+  if (assetId === 'native:near') return 'NEAR';
+  const match = assetId.match(/nep141:([^:]+)/);
   if (match) { const parts = match[1].split('.'); return parts[0].toUpperCase().slice(0,8); }
-  return t.asset_type || '?';
+  const mt = assetId.match(/nep245:.*?:nep141:(.+)/);
+  if (mt) return getAssetLabel('nep141:' + mt[1]);
+  return '?';
 }
 
-function getTypeLabel(t) {
-  const tt = t.transfer_type || '';
-  if (tt === 'MtTransfer') return 'Intents';
-  if (tt === 'FtTransfer') return 'Token Transfer';
-  if (tt === 'NativeTransfer') return 'NEAR Transfer';
-  if (tt === 'FtMint') return 'Mint';
-  if (tt === 'FtBurn') return 'Burn';
-  return tt;
+function fmtAmt(n) {
+  const a = Math.abs(n);
+  if (a >= 1000) return a.toLocaleString('en', {maximumFractionDigits: 2});
+  if (a >= 1) return a.toFixed(2);
+  if (a >= 0.0001) return a.toFixed(4);
+  return a.toFixed(6);
 }
 
-function formatAmount(t) {
-  const h = t.human_amount;
-  if (h === undefined || h === null) return '?';
-  const n = parseFloat(h);
-  if (Math.abs(n) >= 1000) return Math.abs(n).toLocaleString('en', {maximumFractionDigits: 2});
-  if (Math.abs(n) >= 1) return Math.abs(n).toFixed(2);
-  return Math.abs(n).toFixed(4);
-}
-
-function matchesFilter(t) {
-  const asset = getAssetLabel(t);
-  const amt = parseFloat(t.human_amount || 0);
-  if (currentFilter === 'all') return true;
-  if (currentFilter === 'near') return asset === 'NEAR' || asset === 'wNEAR';
-  if (currentFilter === 'usdc') return asset === 'USDC';
-  if (currentFilter === 'usdt') return asset === 'USDT';
-  if (currentFilter === 'ft') return !['NEAR','wNEAR','USDC','USDT'].includes(asset);
-  if (currentFilter === 'in') return amt > 0;
-  if (currentFilter === 'out') return amt < 0;
-  return true;
-}
-
-function formatDate(t) {
-  const ts = t.block_timestamp;
+function formatDate(ts) {
   if (!ts) return '';
   const ms = typeof ts === 'string' ? parseInt(ts) / 1e6 : ts / 1e6;
   const d = new Date(ms);
@@ -158,52 +127,79 @@ function formatDate(t) {
   return d.toLocaleDateString('en', {month:'short', day:'numeric', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined});
 }
 
-function renderTx(t) {
-  const amt = parseFloat(t.human_amount || 0);
-  const isIn = amt > 0;
-  const asset = getAssetLabel(t);
-  const rawOther = t.other_account_id || '';
-  const other = rawOther || (isIn ? 'Deposit to Intents' : 'Withdraw from Intents');
-  const named = rawOther ? isNamed(rawOther) : true;
-  const usd = t.usd_amount ? '$' + Math.abs(parseFloat(t.usd_amount)).toFixed(2) : '';
-  const assetClass = asset === 'NEAR' || asset === 'wNEAR' ? 'near' : asset === 'USDC' || asset === 'USDT' ? 'usdc' : 'other';
-  const date = formatDate(t);
+function groupIntoOps(transfers) {
+  const byTx = {};
+  transfers.forEach(t => {
+    const txId = t.transaction_id || 'unknown';
+    if (!byTx[txId]) byTx[txId] = [];
+    byTx[txId].push(t);
+  });
 
-  const txHash = t.transaction_id || '';
-  const txLink = txHash ? `<a href="https://near.rocks/tx/${txHash}" target="_blank" class="tx-hash" title="${txHash}">${txHash.slice(0,8)}...</a>` : '';
+  const ops = [];
+  for (const [txId, items] of Object.entries(byTx)) {
+    const outItems = items.filter(t => parseFloat(t.human_amount || 0) < 0);
+    const inItems = items.filter(t => parseFloat(t.human_amount || 0) > 0);
+    const ts = items[0].block_timestamp;
+    const totalUsd = items.reduce((s, t) => s + Math.abs(parseFloat(t.usd_amount || 0)), 0) / 2 ||
+                     items.reduce((s, t) => s + Math.abs(parseFloat(t.usd_amount || 0)), 0);
 
-  return `<div class="tx">
-    <div class="direction ${isIn ? 'in' : 'out'}">${isIn ? 'IN' : 'OUT'}</div>
-    <div class="amount ${assetClass}" title="${formatAmount(t)} ${asset}">${formatAmount(t)} ${asset}</div>
-    <div class="details">
-      <div class="type">${getTypeLabel(t)}${date ? ' · ' + date : ''}${txLink ? ' · ' + txLink : ''}</div>
-      <div class="account ${named ? 'named' : ''}" title="${rawOther || other}">${named ? other : rawOther.slice(0,16) + '...'}</div>
+    let type, label;
+    if (outItems.length > 0 && inItems.length > 0) {
+      type = 'swap';
+      const outParts = outItems.map(t => fmtAmt(parseFloat(t.human_amount)) + ' ' + getAssetLabel(t.asset_id));
+      const inParts = inItems.map(t => fmtAmt(parseFloat(t.human_amount)) + ' ' + getAssetLabel(t.asset_id));
+      label = `<span class="out-token">${outParts.join(' + ')}</span><span class="arrow">→</span><span class="in-token">${inParts.join(' + ')}</span>`;
+      // For swap USD, take the larger side (they should be ~equal)
+    } else if (outItems.length > 0) {
+      type = 'withdraw';
+      const parts = outItems.map(t => fmtAmt(parseFloat(t.human_amount)) + ' ' + getAssetLabel(t.asset_id));
+      label = `<span class="single">${parts.join(' + ')}</span>`;
+    } else {
+      type = 'deposit';
+      const parts = inItems.map(t => fmtAmt(parseFloat(t.human_amount)) + ' ' + getAssetLabel(t.asset_id));
+      label = `<span class="single">${parts.join(' + ')}</span>`;
+    }
+
+    const usdAmt = type === 'swap'
+      ? Math.max(...items.map(t => Math.abs(parseFloat(t.usd_amount || 0))))
+      : items.reduce((s, t) => s + Math.abs(parseFloat(t.usd_amount || 0)), 0);
+
+    ops.push({ txId, type, label, ts, usdAmt, items });
+  }
+
+  return ops;
+}
+
+function renderOp(op) {
+  const date = formatDate(op.ts);
+  const usd = op.usdAmt > 0.01 ? '$' + op.usdAmt.toFixed(2) : '';
+  const txLink = `<a href="https://near.rocks/tx/${op.txId}" target="_blank" title="${op.txId}">${op.txId.slice(0,8)}...</a>`;
+
+  return `<div class="op">
+    <div class="op-type ${op.type}">${op.type}</div>
+    <div class="op-amount">
+      <div class="main">${op.label}</div>
+      <div class="op-meta">${date}${date ? ' · ' : ''}${txLink}</div>
     </div>
-    <div class="usd">${usd}</div>
+    <div class="op-usd">${usd}</div>
   </div>`;
 }
 
 function updateSummary() {
-  let nearIn = 0, nearOut = 0, usdcIn = 0;
-  allTransfers.forEach(t => {
-    const amt = parseFloat(t.human_amount || 0);
-    const asset = getAssetLabel(t);
-    if ((asset === 'NEAR' || asset === 'wNEAR') && amt > 0) nearIn += amt;
-    if ((asset === 'NEAR' || asset === 'wNEAR') && amt < 0) nearOut += Math.abs(amt);
-    if (asset === 'USDC' && amt > 0) usdcIn += amt;
-  });
+  const swaps = operations.filter(o => o.type === 'swap').length;
+  const totalUsd = operations.reduce((s, o) => s + o.usdAmt, 0);
   const spinner = loading ? ' ⏳' : '';
-  document.getElementById('txCount').textContent = allTransfers.length + spinner;
-  document.getElementById('nearIn').textContent = nearIn.toFixed(2) + spinner;
-  document.getElementById('nearOut').textContent = nearOut.toFixed(2) + spinner;
-  document.getElementById('usdcIn').textContent = '$' + usdcIn.toFixed(2) + spinner;
+  document.getElementById('opsCount').textContent = operations.length + spinner;
+  document.getElementById('swapsCount').textContent = swaps + spinner;
+  document.getElementById('totalUsd').textContent = '$' + totalUsd.toFixed(2) + spinner;
 }
 
 function render() {
-  const filtered = allTransfers.filter(matchesFilter);
-  document.getElementById('results').innerHTML = filtered.length ? 
-    '<div class="tx-list">' + filtered.map(renderTx).join('') + '</div>' :
-    '<div class="loading">No transactions match this filter</div>';
+  operations = groupIntoOps(allTransfers);
+  const filtered = currentFilter === 'all' ? operations : operations.filter(o => o.type === currentFilter);
+  document.getElementById('results').innerHTML = filtered.length ?
+    '<div class="op-list">' + filtered.map(renderOp).join('') + '</div>' :
+    '<div class="loading">No operations match this filter</div>';
   updateSummary();
 }
 
@@ -218,16 +214,16 @@ async function fetchTransfers(account, resume) {
   const body = { account_id: account, limit: 50, desc: true };
   if (resume) body.resume_token = resume;
   const resp = await fetch(API, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
   return await resp.json();
 }
-
-let loading = false;
 
 async function search() {
   const account = document.getElementById('account').value.trim();
   if (!account) return;
   currentAccount = account;
   allTransfers = [];
+  operations = [];
   resumeToken = null;
   loading = true;
   currentFilter = 'all';
@@ -236,7 +232,6 @@ async function search() {
   document.getElementById('results').innerHTML = '<div class="loading">Loading intents operations...</div>';
   document.getElementById('filters').style.display = 'flex';
   document.getElementById('summary').style.display = 'flex';
-  document.getElementById('loadMore').style.display = 'none';
   document.getElementById('searchBtn').disabled = true;
   document.getElementById('searchBtn').textContent = 'Loading...';
 
@@ -249,7 +244,7 @@ async function search() {
 async function loadAllPages(account) {
   let token = resumeToken || null;
   while (true) {
-    showStatusBar('Loading... ' + allTransfers.length + ' intents operations so far');
+    showStatusBar('Loading... ' + allTransfers.length + ' transfers scanned, ' + operations.length + ' intents ops found');
     try {
       const data = await fetchTransfers(account, token);
       const raw = data.transfers || [];
@@ -268,7 +263,7 @@ async function loadAllPages(account) {
       let skipWait = false;
       window._retryNow = () => { skipWait = true; };
       for (let i = wait; i > 0 && !skipWait; i--) {
-        showStatusBar('Rate limited — loaded ' + allTransfers.length + ' transactions. Retrying in ' + i + 's... <button onclick="window._retryNow()" style="margin-left:12px;padding:5px 14px;background:#238636;border:none;border-radius:6px;color:white;cursor:pointer;font-size:13px;">Retry now</button>');
+        showStatusBar('Rate limited — ' + operations.length + ' ops found. Retrying in ' + i + 's... <button onclick="window._retryNow()" style="margin-left:12px;padding:5px 14px;background:#238636;border:none;border-radius:6px;color:white;cursor:pointer;font-size:13px;">Retry now</button>');
         await new Promise(r => setTimeout(r, 1000));
       }
       showStatusBar('Retrying...');
@@ -279,43 +274,18 @@ async function loadAllPages(account) {
   showStatusBar(null);
 }
 
-function showStatusBar(message, showRetry) {
+function showStatusBar(message) {
   let bar = document.getElementById('statusBar');
   if (!message) { if (bar) bar.remove(); return; }
   if (!bar) {
     bar = document.createElement('div');
     bar.id = 'statusBar';
-    const summary = document.getElementById('summary');
-    summary.after(bar);
+    document.getElementById('summary').after(bar);
   }
+  const isError = message.includes('Rate limited');
   bar.style.cssText = 'text-align:center;padding:10px 16px;margin-bottom:12px;border-radius:8px;font-size:13px;' +
-    (showRetry ? 'background:#2d1215;color:#f85149;' : 'background:#1c2333;color:#8b949e;');
-  bar.innerHTML = message + (showRetry ? ' <button onclick="retryLoad()" style="margin-left:12px;padding:5px 14px;background:#238636;border:none;border-radius:6px;color:white;cursor:pointer;font-size:13px;">Continue loading</button>' : '');
-}
-
-async function retryLoad() {
-  const bar = document.getElementById('retryBar');
-  if (bar) bar.remove();
-  loading = true;
-  document.getElementById('searchBtn').disabled = true;
-  document.getElementById('searchBtn').textContent = 'Loading...';
-  try {
-    await loadAllPages(currentAccount);
-  } catch(e) {}
-  loading = false;
-  document.getElementById('searchBtn').disabled = false;
-  document.getElementById('searchBtn').textContent = 'Search';
-}
-
-async function loadMore() {
-  if (!resumeToken) return;
-  try {
-    const data = await fetchTransfers(currentAccount, resumeToken);
-    allTransfers = allTransfers.concat(data.transfers || []);
-    resumeToken = data.resume_token || null;
-    document.getElementById('loadMore').style.display = resumeToken ? 'block' : 'none';
-    render();
-  } catch(e) {}
+    (isError ? 'background:#2d1215;color:#f85149;' : 'background:#1c2333;color:#8b949e;');
+  bar.innerHTML = message;
 }
 
 document.getElementById('account').addEventListener('keypress', e => { if (e.key === 'Enter') search(); });
