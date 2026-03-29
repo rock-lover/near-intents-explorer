@@ -233,7 +233,7 @@ function render() {
   const filtered = currentFilter === 'all' ? operations : operations.filter(o => o.type === currentFilter);
   document.getElementById('results').innerHTML = filtered.length ?
     '<div class="op-list">' + filtered.map(renderOp).join('') + '</div>' :
-    '<div class="loading">No operations match this filter</div>';
+    (loading ? '<div class="loading">Loading intents operations...</div>' : '<div class="loading">No intents operations found for this account</div>');
   updateSummary();
 }
 
