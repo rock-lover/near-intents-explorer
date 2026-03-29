@@ -29,7 +29,9 @@ h1 { color: #58a6ff; margin-bottom: 4px; font-size: 1.6em; }
 .tx .direction { width: 50px; text-align: center; font-weight: 700; font-size: 13px; border-radius: 4px; padding: 2px 0; }
 .tx .direction.in { color: #3fb950; background: #0d2818; }
 .tx .direction.out { color: #f85149; background: #2d1215; }
-.tx .amount { width: 180px; min-width: 180px; text-align: right; font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx .amount { width: 180px; min-width: 180px; max-width: 180px; flex-shrink: 0; text-align: right; font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx-hash { color: #8b949e; text-decoration: none; font-family: monospace; font-size: 11px; }
+.tx-hash:hover { color: #58a6ff; text-decoration: underline; }
 .tx .amount.near { color: #79c0ff; }
 .tx .amount.usdc { color: #3fb950; }
 .tx .amount.other { color: #d2a8ff; }
@@ -166,11 +168,14 @@ function renderTx(t) {
   const assetClass = asset === 'NEAR' || asset === 'wNEAR' ? 'near' : asset === 'USDC' || asset === 'USDT' ? 'usdc' : 'other';
   const date = formatDate(t);
 
+  const txHash = t.transaction_id || '';
+  const txLink = txHash ? `<a href="https://near.rocks/txn/${txHash}" target="_blank" class="tx-hash" title="${txHash}">${txHash.slice(0,8)}...</a>` : '';
+
   return `<div class="tx">
     <div class="direction ${isIn ? 'in' : 'out'}">${isIn ? 'IN' : 'OUT'}</div>
-    <div class="amount ${assetClass}">${formatAmount(t)} ${asset}</div>
+    <div class="amount ${assetClass}" title="${formatAmount(t)} ${asset}">${formatAmount(t)} ${asset}</div>
     <div class="details">
-      <div class="type">${getTypeLabel(t)}${date ? ' · ' + date : ''}</div>
+      <div class="type">${getTypeLabel(t)}${date ? ' · ' + date : ''}${txLink ? ' · ' + txLink : ''}</div>
       <div class="account ${named ? 'named' : ''}" title="${other}">${named ? other : other.slice(0,16) + '...'}</div>
     </div>
     <div class="usd">${usd}</div>
@@ -256,12 +261,14 @@ async function loadAllPages(account) {
       await new Promise(r => setTimeout(r, 1500));
     } catch(e) {
       resumeToken = token;
-      loading = false;
-      document.getElementById('searchBtn').disabled = false;
-      document.getElementById('searchBtn').textContent = 'Search';
-      showStatusBar('Rate limited — loaded ' + allTransfers.length + ' transactions so far.', true);
       render();
-      return;
+      const wait = 20;
+      for (let i = wait; i > 0; i--) {
+        showStatusBar('Rate limited — loaded ' + allTransfers.length + ' transactions. Retrying in ' + i + 's...');
+        await new Promise(r => setTimeout(r, 1000));
+      }
+      showStatusBar('Retrying...');
+      continue;
     }
   }
   resumeToken = null;
