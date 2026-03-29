@@ -56,7 +56,7 @@ h1 { color: #58a6ff; margin-bottom: 4px; font-size: 1.6em; }
 <body>
 <div class="container">
   <h1>NEAR Intents Explorer</h1>
-  <p class="subtitle">Human-readable view of your NEAR transfers, swaps, and Intents activity</p>
+  <p class="subtitle">Deposits, withdrawals, and swaps through NEAR Intents</p>
   
   <div class="search-box">
     <input type="text" id="account" placeholder="Enter NEAR account (e.g. zavodil.near)" />
@@ -65,16 +65,16 @@ h1 { color: #58a6ff; margin-bottom: 4px; font-size: 1.6em; }
 
   <div class="filters" id="filters" style="display:none">
     <button class="active" data-filter="all" onclick="setFilter('all',this)">All</button>
-    <button data-filter="near" onclick="setFilter('near',this)">NEAR</button>
+    <button data-filter="near" onclick="setFilter('near',this)">NEAR/wNEAR</button>
     <button data-filter="usdc" onclick="setFilter('usdc',this)">USDC</button>
     <button data-filter="usdt" onclick="setFilter('usdt',this)">USDT</button>
-    <button data-filter="ft" onclick="setFilter('ft',this)">Other FT</button>
-    <button data-filter="in" onclick="setFilter('in',this)">Incoming</button>
-    <button data-filter="out" onclick="setFilter('out',this)">Outgoing</button>
+    <button data-filter="ft" onclick="setFilter('ft',this)">Other</button>
+    <button data-filter="in" onclick="setFilter('in',this)">In</button>
+    <button data-filter="out" onclick="setFilter('out',this)">Out</button>
   </div>
 
   <div class="summary" id="summary" style="display:none">
-    <div class="card"><div class="label">Transactions</div><div class="value" id="txCount">0</div></div>
+    <div class="card"><div class="label">Intents Ops</div><div class="value" id="txCount">0</div></div>
     <div class="card"><div class="label">NEAR In</div><div class="value" id="nearIn">0</div></div>
     <div class="card"><div class="label">NEAR Out</div><div class="value" id="nearOut">0</div></div>
     <div class="card"><div class="label">USDC In</div><div class="value" id="usdcIn">$0</div></div>
@@ -187,8 +187,8 @@ function updateSummary() {
   allTransfers.forEach(t => {
     const amt = parseFloat(t.human_amount || 0);
     const asset = getAssetLabel(t);
-    if (asset === 'NEAR' && amt > 0) nearIn += amt;
-    if (asset === 'NEAR' && amt < 0) nearOut += Math.abs(amt);
+    if ((asset === 'NEAR' || asset === 'wNEAR') && amt > 0) nearIn += amt;
+    if ((asset === 'NEAR' || asset === 'wNEAR') && amt < 0) nearOut += Math.abs(amt);
     if (asset === 'USDC' && amt > 0) usdcIn += amt;
   });
   const spinner = loading ? ' ⏳' : '';
@@ -232,7 +232,7 @@ async function search() {
   currentFilter = 'all';
   document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
   document.querySelector('.filters button[data-filter="all"]').classList.add('active');
-  document.getElementById('results').innerHTML = '<div class="loading">Loading all transactions...</div>';
+  document.getElementById('results').innerHTML = '<div class="loading">Loading intents operations...</div>';
   document.getElementById('filters').style.display = 'flex';
   document.getElementById('summary').style.display = 'flex';
   document.getElementById('loadMore').style.display = 'none';
@@ -248,11 +248,12 @@ async function search() {
 async function loadAllPages(account) {
   let token = resumeToken || null;
   while (true) {
-    showStatusBar('Loading... ' + allTransfers.length + ' transactions so far');
+    showStatusBar('Loading... ' + allTransfers.length + ' intents operations so far');
     try {
       const data = await fetchTransfers(account, token);
-      const batch = data.transfers || [];
-      if (batch.length === 0) break;
+      const raw = data.transfers || [];
+      if (raw.length === 0) break;
+      const batch = raw.filter(t => t.transfer_type === 'MtTransfer');
       allTransfers = allTransfers.concat(batch);
       token = data.resume_token || null;
       resumeToken = token;
