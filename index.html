@@ -68,9 +68,10 @@ h1 { color: #58a6ff; margin-bottom: 4px; font-size: 1.6em; }
   </div>
 
   <div class="summary" id="summary" style="display:none">
-    <div class="card"><div class="label">Operations</div><div class="value" id="opsCount">0</div></div>
+    <div class="card"><div class="label">Txs Loaded</div><div class="value" id="txsLoaded">0</div></div>
+    <div class="card"><div class="label">Intents Ops</div><div class="value" id="opsCount">0</div></div>
     <div class="card"><div class="label">Swaps</div><div class="value" id="swapsCount">0</div></div>
-    <div class="card"><div class="label">Total USD Volume</div><div class="value" id="totalUsd">$0</div></div>
+    <div class="card"><div class="label">USD Volume</div><div class="value" id="totalUsd">$0</div></div>
   </div>
 
   <div id="results"></div>
@@ -86,6 +87,7 @@ h1 { color: #58a6ff; margin-bottom: 4px; font-size: 1.6em; }
 const API = 'https://transfers.main.fastnear.com/v0/transfers';
 let allTransfers = [];
 let operations = [];
+let totalLoaded = 0;
 let resumeToken = null;
 let currentAccount = '';
 let currentFilter = 'all';
@@ -189,6 +191,7 @@ function updateSummary() {
   const swaps = operations.filter(o => o.type === 'swap').length;
   const totalUsd = operations.reduce((s, o) => s + o.usdAmt, 0);
   const spinner = loading ? ' ⏳' : '';
+  document.getElementById('txsLoaded').textContent = totalLoaded.toLocaleString() + spinner;
   document.getElementById('opsCount').textContent = operations.length + spinner;
   document.getElementById('swapsCount').textContent = swaps + spinner;
   document.getElementById('totalUsd').textContent = '$' + totalUsd.toFixed(2) + spinner;
@@ -224,6 +227,7 @@ async function search() {
   currentAccount = account;
   allTransfers = [];
   operations = [];
+  totalLoaded = 0;
   resumeToken = null;
   loading = true;
   currentFilter = 'all';
@@ -249,6 +253,7 @@ async function loadAllPages(account) {
       const data = await fetchTransfers(account, token);
       const raw = data.transfers || [];
       if (raw.length === 0) break;
+      totalLoaded += raw.length;
       const batch = raw.filter(t => t.transfer_type === 'MtTransfer');
       allTransfers = allTransfers.concat(batch);
       token = data.resume_token || null;
