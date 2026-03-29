@@ -272,6 +272,7 @@ async function search() {
 
   await loadAllPages(account);
   loading = false;
+  render();
   document.getElementById('searchBtn').disabled = false;
   document.getElementById('searchBtn').textContent = 'Search';
 }
