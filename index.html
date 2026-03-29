@@ -79,7 +79,7 @@ h1 { color: #58a6ff; margin-bottom: 4px; font-size: 1.6em; }
     <div class="card"><div class="label">Txs Loaded</div><div class="value" id="txsLoaded">0</div></div>
     <div class="card"><div class="label">Intents Ops</div><div class="value" id="opsCount">0</div></div>
     <div class="card"><div class="label">Swaps</div><div class="value" id="swapsCount">0</div></div>
-    <div class="card"><div class="label">USD Volume</div><div class="value" id="totalUsd">$0</div></div>
+    <div class="card"><div class="label">Volume (est.)</div><div class="value" id="totalUsd">$0</div></div>
   </div>
 
   <div id="results"></div>
@@ -256,7 +256,7 @@ async function search() {
 async function loadAllPages(account) {
   let token = resumeToken || null;
   while (true) {
-    showStatusBar('Loading... ' + allTransfers.length + ' transfers scanned, ' + operations.length + ' intents ops found');
+    showStatusBar('Loading... ' + operations.length + ' intents ops found');
     try {
       const data = await fetchTransfers(account, token);
       const raw = data.transfers || [];
