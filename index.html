@@ -142,6 +142,20 @@ function matchesFilter(t) {
   return true;
 }
 
+function formatDate(t) {
+  const ts = t.block_timestamp;
+  if (!ts) return '';
+  const ms = typeof ts === 'string' ? parseInt(ts) / 1e6 : ts / 1e6;
+  const d = new Date(ms);
+  if (isNaN(d.getTime())) return '';
+  const now = new Date();
+  const diff = now - d;
+  if (diff < 3600000) return Math.floor(diff/60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
+  if (diff < 604800000) return Math.floor(diff/86400000) + 'd ago';
+  return d.toLocaleDateString('en', {month:'short', day:'numeric', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined});
+}
+
 function renderTx(t) {
   const amt = parseFloat(t.human_amount || 0);
   const isIn = amt > 0;
@@ -150,12 +164,13 @@ function renderTx(t) {
   const named = isNamed(other);
   const usd = t.usd_amount ? '$' + Math.abs(parseFloat(t.usd_amount)).toFixed(2) : '';
   const assetClass = asset === 'NEAR' || asset === 'wNEAR' ? 'near' : asset === 'USDC' || asset === 'USDT' ? 'usdc' : 'other';
-  
+  const date = formatDate(t);
+
   return `<div class="tx">
     <div class="direction ${isIn ? 'in' : 'out'}">${isIn ? 'IN' : 'OUT'}</div>
     <div class="amount ${assetClass}">${formatAmount(t)} ${asset}</div>
     <div class="details">
-      <div class="type">${getTypeLabel(t)}</div>
+      <div class="type">${getTypeLabel(t)}${date ? ' · ' + date : ''}</div>
       <div class="account ${named ? 'named' : ''}" title="${other}">${named ? other : other.slice(0,16) + '...'}</div>
     </div>
     <div class="usd">${usd}</div>
