@@ -154,20 +154,29 @@ function groupIntoOps(transfers) {
                      items.reduce((s, t) => s + Math.abs(parseFloat(t.usd_amount || 0)), 0);
 
     let type, label;
-    if (outItems.length > 0 && inItems.length > 0) {
+    const outAssets = new Set(outItems.map(t => getAssetLabel(t.asset_id)));
+    const inAssets = new Set(inItems.map(t => getAssetLabel(t.asset_id)));
+    const sameAsset = outAssets.size === 1 && inAssets.size === 1 && [...outAssets][0] === [...inAssets][0];
+    if (outItems.length > 0 && inItems.length > 0 && !sameAsset) {
       type = 'swap';
       const outParts = outItems.map(t => fmtAmt(parseFloat(t.human_amount)) + ' ' + getAssetLabel(t.asset_id));
       const inParts = inItems.map(t => fmtAmt(parseFloat(t.human_amount)) + ' ' + getAssetLabel(t.asset_id));
       label = `<span class="out-token">${outParts.join(' + ')}</span><span class="arrow">→</span><span class="in-token">${inParts.join(' + ')}</span>`;
       // For swap USD, take the larger side (they should be ~equal)
-    } else if (outItems.length > 0) {
+    } else if (outItems.length > 0 && inItems.length === 0) {
       type = 'withdraw';
       const parts = outItems.map(t => fmtAmt(parseFloat(t.human_amount)) + ' ' + getAssetLabel(t.asset_id));
       label = `<span class="single">${parts.join(' + ')}</span>`;
-    } else {
+    } else if (inItems.length > 0 && outItems.length === 0) {
       type = 'deposit';
       const parts = inItems.map(t => fmtAmt(parseFloat(t.human_amount)) + ' ' + getAssetLabel(t.asset_id));
       label = `<span class="single">${parts.join(' + ')}</span>`;
+    } else {
+      // same asset in+out — net it
+      const net = items.reduce((s, t) => s + parseFloat(t.human_amount || 0), 0);
+      type = net >= 0 ? 'deposit' : 'withdraw';
+      const asset = getAssetLabel(items[0].asset_id);
+      label = `<span class="single">${fmtAmt(net)} ${asset}</span>`;
     }
 
     const usdAmt = type === 'swap'
