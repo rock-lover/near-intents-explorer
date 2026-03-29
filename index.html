@@ -186,10 +186,11 @@ function updateSummary() {
     if ((asset === 'NEAR' || asset === 'wNEAR') && amt < 0) nearOut += Math.abs(amt);
     if (asset === 'USDC' && amt > 0) usdcIn += amt;
   });
-  document.getElementById('txCount').textContent = allTransfers.length;
-  document.getElementById('nearIn').textContent = nearIn.toFixed(2);
-  document.getElementById('nearOut').textContent = nearOut.toFixed(2);
-  document.getElementById('usdcIn').textContent = '$' + usdcIn.toFixed(2);
+  const spinner = loading ? ' ⏳' : '';
+  document.getElementById('txCount').textContent = allTransfers.length + spinner;
+  document.getElementById('nearIn').textContent = nearIn.toFixed(2) + spinner;
+  document.getElementById('nearOut').textContent = nearOut.toFixed(2) + spinner;
+  document.getElementById('usdcIn').textContent = '$' + usdcIn.toFixed(2) + spinner;
 }
 
 function render() {
@@ -214,30 +215,51 @@ async function fetchTransfers(account, resume) {
   return await resp.json();
 }
 
+let loading = false;
+
 async function search() {
   const account = document.getElementById('account').value.trim();
   if (!account) return;
   currentAccount = account;
   allTransfers = [];
   resumeToken = null;
+  loading = true;
   currentFilter = 'all';
   document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
   document.querySelector('.filters button[data-filter="all"]').classList.add('active');
-  document.getElementById('results').innerHTML = '<div class="loading">Loading...</div>';
+  document.getElementById('results').innerHTML = '<div class="loading">Loading all transactions...</div>';
   document.getElementById('filters').style.display = 'flex';
   document.getElementById('summary').style.display = 'flex';
+  document.getElementById('loadMore').style.display = 'none';
   document.getElementById('searchBtn').disabled = true;
-  
+  document.getElementById('searchBtn').textContent = 'Loading...';
+
   try {
-    const data = await fetchTransfers(account);
-    allTransfers = data.transfers || [];
-    resumeToken = data.resume_token || null;
-    document.getElementById('loadMore').style.display = resumeToken ? 'block' : 'none';
-    render();
+    await loadAllPages(account);
   } catch(e) {
     document.getElementById('results').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
   }
+  loading = false;
   document.getElementById('searchBtn').disabled = false;
+  document.getElementById('searchBtn').textContent = 'Search';
+}
+
+async function loadAllPages(account) {
+  let token = null;
+  let page = 0;
+  while (true) {
+    const data = await fetchTransfers(account, token);
+    const batch = data.transfers || [];
+    if (batch.length === 0) break;
+    allTransfers = allTransfers.concat(batch);
+    token = data.resume_token || null;
+    page++;
+    render();
+    if (!token) break;
+    // Small delay to not hammer the API
+    await new Promise(r => setTimeout(r, 200));
+  }
+  resumeToken = null;
 }
 
 async function loadMore() {
