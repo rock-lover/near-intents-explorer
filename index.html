@@ -234,32 +234,58 @@ async function search() {
   document.getElementById('searchBtn').disabled = true;
   document.getElementById('searchBtn').textContent = 'Loading...';
 
-  try {
-    await loadAllPages(account);
-  } catch(e) {
-    document.getElementById('results').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
-  }
+  await loadAllPages(account);
   loading = false;
   document.getElementById('searchBtn').disabled = false;
   document.getElementById('searchBtn').textContent = 'Search';
 }
 
 async function loadAllPages(account) {
-  let token = null;
-  let page = 0;
+  let token = resumeToken || null;
   while (true) {
-    const data = await fetchTransfers(account, token);
-    const batch = data.transfers || [];
-    if (batch.length === 0) break;
-    allTransfers = allTransfers.concat(batch);
-    token = data.resume_token || null;
-    page++;
-    render();
-    if (!token) break;
-    // Small delay to not hammer the API
-    await new Promise(r => setTimeout(r, 200));
+    try {
+      const data = await fetchTransfers(account, token);
+      const batch = data.transfers || [];
+      if (batch.length === 0) break;
+      allTransfers = allTransfers.concat(batch);
+      token = data.resume_token || null;
+      resumeToken = token;
+      render();
+      if (!token) break;
+      await new Promise(r => setTimeout(r, 1500));
+    } catch(e) {
+      resumeToken = token;
+      loading = false;
+      document.getElementById('searchBtn').disabled = false;
+      document.getElementById('searchBtn').textContent = 'Search';
+      const retryDiv = document.getElementById('retryBar');
+      if (retryDiv) retryDiv.remove();
+      const bar = document.createElement('div');
+      bar.id = 'retryBar';
+      bar.style.cssText = 'text-align:center;padding:12px;margin-top:8px;background:#2d1215;border-radius:8px;color:#f85149;';
+      bar.innerHTML = 'Rate limited — loaded ' + allTransfers.length + ' transactions so far. <button onclick="retryLoad()" style="margin-left:12px;padding:6px 16px;background:#238636;border:none;border-radius:6px;color:white;cursor:pointer;">Continue loading</button>';
+      document.getElementById('results').after(bar);
+      render();
+      return;
+    }
   }
   resumeToken = null;
+  const retryDiv = document.getElementById('retryBar');
+  if (retryDiv) retryDiv.remove();
+}
+
+async function retryLoad() {
+  const bar = document.getElementById('retryBar');
+  if (bar) bar.remove();
+  loading = true;
+  document.getElementById('searchBtn').disabled = true;
+  document.getElementById('searchBtn').textContent = 'Loading...';
+  try {
+    await loadAllPages(currentAccount);
+  } catch(e) {}
+  loading = false;
+  document.getElementById('searchBtn').disabled = false;
+  document.getElementById('searchBtn').textContent = 'Search';
 }
 
 async function loadMore() {
