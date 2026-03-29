@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEAR Intents Explorer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #e0e0e0; min-height: 100vh; }
+.container { max-width: 900px; margin: 0 auto; padding: 20px; }
+h1 { color: #58a6ff; margin-bottom: 4px; font-size: 1.6em; }
+.subtitle { color: #8b949e; margin-bottom: 24px; font-size: 0.9em; }
+.search-box { display: flex; gap: 8px; margin-bottom: 24px; }
+.search-box input { flex: 1; padding: 12px 16px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; color: #e0e0e0; font-size: 14px; outline: none; }
+.search-box input:focus { border-color: #58a6ff; }
+.search-box button { padding: 12px 24px; background: #238636; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; font-size: 14px; }
+.search-box button:hover { background: #2ea043; }
+.search-box button:disabled { background: #21262d; color: #484f58; cursor: wait; }
+.filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.filters button { padding: 6px 14px; background: #21262d; border: 1px solid #30363d; border-radius: 16px; color: #8b949e; cursor: pointer; font-size: 12px; }
+.filters button.active { background: #1c2333; border-color: #58a6ff; color: #58a6ff; }
+.summary { display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.summary .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 16px; flex: 1; min-width: 120px; }
+.summary .card .label { color: #8b949e; font-size: 11px; text-transform: uppercase; }
+.summary .card .value { color: #58a6ff; font-size: 1.3em; font-weight: 600; margin-top: 2px; }
+.tx-list { display: flex; flex-direction: column; gap: 6px; }
+.tx { display: flex; align-items: center; padding: 12px 16px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; gap: 12px; }
+.tx:hover { border-color: #484f58; }
+.tx .direction { width: 50px; text-align: center; font-weight: 700; font-size: 13px; border-radius: 4px; padding: 2px 0; }
+.tx .direction.in { color: #3fb950; background: #0d2818; }
+.tx .direction.out { color: #f85149; background: #2d1215; }
+.tx .amount { min-width: 120px; text-align: right; font-weight: 600; font-size: 15px; }
+.tx .amount.near { color: #79c0ff; }
+.tx .amount.usdc { color: #3fb950; }
+.tx .amount.other { color: #d2a8ff; }
+.tx .details { flex: 1; min-width: 0; }
+.tx .details .type { color: #8b949e; font-size: 12px; }
+.tx .details .account { color: #c9d1d9; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tx .details .account.named { color: #58a6ff; }
+.tx .usd { color: #8b949e; font-size: 12px; min-width: 70px; text-align: right; }
+.loading { text-align: center; padding: 40px; color: #8b949e; }
+.error { text-align: center; padding: 20px; color: #f85149; background: #2d1215; border-radius: 8px; }
+.load-more { text-align: center; margin-top: 16px; }
+.load-more button { padding: 10px 32px; background: #21262d; border: 1px solid #30363d; border-radius: 8px; color: #8b949e; cursor: pointer; }
+.footer { text-align: center; margin-top: 32px; padding-top: 16px; border-top: 1px solid #30363d; color: #484f58; font-size: 12px; }
+.footer a { color: #58a6ff; text-decoration: none; }
+@media (max-width: 600px) {
+  .tx { flex-wrap: wrap; }
+  .tx .amount { min-width: auto; }
+  .summary { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>NEAR Intents Explorer</h1>
+  <p class="subtitle">Human-readable view of your NEAR transfers, swaps, and Intents activity</p>
+  
+  <div class="search-box">
+    <input type="text" id="account" placeholder="Enter NEAR account (e.g. zavodil.near)" />
+    <button id="searchBtn" onclick="search()">Search</button>
+  </div>
+
+  <div class="filters" id="filters" style="display:none">
+    <button class="active" data-filter="all" onclick="setFilter('all',this)">All</button>
+    <button data-filter="near" onclick="setFilter('near',this)">NEAR</button>
+    <button data-filter="usdc" onclick="setFilter('usdc',this)">USDC</button>
+    <button data-filter="usdt" onclick="setFilter('usdt',this)">USDT</button>
+    <button data-filter="ft" onclick="setFilter('ft',this)">Other FT</button>
+    <button data-filter="in" onclick="setFilter('in',this)">Incoming</button>
+    <button data-filter="out" onclick="setFilter('out',this)">Outgoing</button>
+  </div>
+
+  <div class="summary" id="summary" style="display:none">
+    <div class="card"><div class="label">Transactions</div><div class="value" id="txCount">0</div></div>
+    <div class="card"><div class="label">NEAR In</div><div class="value" id="nearIn">0</div></div>
+    <div class="card"><div class="label">NEAR Out</div><div class="value" id="nearOut">0</div></div>
+    <div class="card"><div class="label">USDC In</div><div class="value" id="usdcIn">$0</div></div>
+  </div>
+
+  <div id="results"></div>
+  <div class="load-more" id="loadMore" style="display:none">
+    <button onclick="loadMore()">Load more</button>
+  </div>
+
+  <div class="footer">
+    Built by <a href="https://near.fm/profile/cf847e7565b443ea0535ac21e14f042875d1be3d18b886077227d6f520d450a2">Rock Lover</a> · 
+    <a href="https://github.com/rock-lover/near-intents-explorer">GitHub</a> · 
+    Powered by <a href="https://transfers.main.fastnear.com">FastNear Transfers API</a>
+  </div>
+</div>
+
+<script>
+const API = 'https://transfers.main.fastnear.com/v0/transfers';
+let allTransfers = [];
+let resumeToken = null;
+let currentAccount = '';
+let currentFilter = 'all';
+
+function isNamed(acc) { return acc && acc.includes('.'); }
+
+function getAssetLabel(t) {
+  const id = t.asset_id || '';
+  if (id === 'native:near') return 'NEAR';
+  if (id.includes('17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1')) return 'USDC';
+  if (id.includes('usdt.tether-token.near')) return 'USDT';
+  if (id.includes('wrap.near')) return 'wNEAR';
+  const match = id.match(/nep141:(.+)/);
+  if (match) { const parts = match[1].split('.'); return parts[0].toUpperCase().slice(0,8); }
+  return t.asset_type || '?';
+}
+
+function getTypeLabel(t) {
+  const tt = t.transfer_type || '';
+  if (tt === 'MtTransfer') return 'Intents';
+  if (tt === 'FtTransfer') return 'Token Transfer';
+  if (tt === 'NativeTransfer') return 'NEAR Transfer';
+  if (tt === 'FtMint') return 'Mint';
+  if (tt === 'FtBurn') return 'Burn';
+  return tt;
+}
+
+function formatAmount(t) {
+  const h = t.human_amount;
+  if (h === undefined || h === null) return '?';
+  const n = parseFloat(h);
+  if (Math.abs(n) >= 1000) return Math.abs(n).toLocaleString('en', {maximumFractionDigits: 2});
+  if (Math.abs(n) >= 1) return Math.abs(n).toFixed(2);
+  return Math.abs(n).toFixed(4);
+}
+
+function matchesFilter(t) {
+  const asset = getAssetLabel(t);
+  const amt = parseFloat(t.human_amount || 0);
+  if (currentFilter === 'all') return true;
+  if (currentFilter === 'near') return asset === 'NEAR' || asset === 'wNEAR';
+  if (currentFilter === 'usdc') return asset === 'USDC';
+  if (currentFilter === 'usdt') return asset === 'USDT';
+  if (currentFilter === 'ft') return !['NEAR','wNEAR','USDC','USDT'].includes(asset);
+  if (currentFilter === 'in') return amt > 0;
+  if (currentFilter === 'out') return amt < 0;
+  return true;
+}
+
+function renderTx(t) {
+  const amt = parseFloat(t.human_amount || 0);
+  const isIn = amt > 0;
+  const asset = getAssetLabel(t);
+  const other = t.other_account_id || '?';
+  const named = isNamed(other);
+  const usd = t.usd_amount ? '$' + Math.abs(parseFloat(t.usd_amount)).toFixed(2) : '';
+  const assetClass = asset === 'NEAR' || asset === 'wNEAR' ? 'near' : asset === 'USDC' || asset === 'USDT' ? 'usdc' : 'other';
+  
+  return `<div class="tx">
+    <div class="direction ${isIn ? 'in' : 'out'}">${isIn ? 'IN' : 'OUT'}</div>
+    <div class="amount ${assetClass}">${formatAmount(t)} ${asset}</div>
+    <div class="details">
+      <div class="type">${getTypeLabel(t)}</div>
+      <div class="account ${named ? 'named' : ''}" title="${other}">${named ? other : other.slice(0,16) + '...'}</div>
+    </div>
+    <div class="usd">${usd}</div>
+  </div>`;
+}
+
+function updateSummary() {
+  let nearIn = 0, nearOut = 0, usdcIn = 0;
+  allTransfers.forEach(t => {
+    const amt = parseFloat(t.human_amount || 0);
+    const asset = getAssetLabel(t);
+    if ((asset === 'NEAR' || asset === 'wNEAR') && amt > 0) nearIn += amt;
+    if ((asset === 'NEAR' || asset === 'wNEAR') && amt < 0) nearOut += Math.abs(amt);
+    if (asset === 'USDC' && amt > 0) usdcIn += amt;
+  });
+  document.getElementById('txCount').textContent = allTransfers.length;
+  document.getElementById('nearIn').textContent = nearIn.toFixed(2);
+  document.getElementById('nearOut').textContent = nearOut.toFixed(2);
+  document.getElementById('usdcIn').textContent = '$' + usdcIn.toFixed(2);
+}
+
+function render() {
+  const filtered = allTransfers.filter(matchesFilter);
+  document.getElementById('results').innerHTML = filtered.length ? 
+    '<div class="tx-list">' + filtered.map(renderTx).join('') + '</div>' :
+    '<div class="loading">No transactions match this filter</div>';
+  updateSummary();
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+async function fetchTransfers(account, resume) {
+  const body = { account_id: account, limit: 50, desc: true };
+  if (resume) body.resume_token = resume;
+  const resp = await fetch(API, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  return await resp.json();
+}
+
+async function search() {
+  const account = document.getElementById('account').value.trim();
+  if (!account) return;
+  currentAccount = account;
+  allTransfers = [];
+  resumeToken = null;
+  currentFilter = 'all';
+  document.querySelectorAll('.filters button').forEach(b => b.classList.remove('active'));
+  document.querySelector('.filters button[data-filter="all"]').classList.add('active');
+  document.getElementById('results').innerHTML = '<div class="loading">Loading...</div>';
+  document.getElementById('filters').style.display = 'flex';
+  document.getElementById('summary').style.display = 'flex';
+  document.getElementById('searchBtn').disabled = true;
+  
+  try {
+    const data = await fetchTransfers(account);
+    allTransfers = data.transfers || [];
+    resumeToken = data.resume_token || null;
+    document.getElementById('loadMore').style.display = resumeToken ? 'block' : 'none';
+    render();
+  } catch(e) {
+    document.getElementById('results').innerHTML = '<div class="error">Error: ' + e.message + '</div>';
+  }
+  document.getElementById('searchBtn').disabled = false;
+}
+
+async function loadMore() {
+  if (!resumeToken) return;
+  try {
+    const data = await fetchTransfers(currentAccount, resumeToken);
+    allTransfers = allTransfers.concat(data.transfers || []);
+    resumeToken = data.resume_token || null;
+    document.getElementById('loadMore').style.display = resumeToken ? 'block' : 'none';
+    render();
+  } catch(e) {}
+}
+
+document.getElementById('account').addEventListener('keypress', e => { if (e.key === 'Enter') search(); });
+
+const params = new URLSearchParams(window.location.search);
+if (params.get('account')) {
+  document.getElementById('account').value = params.get('account');
+  search();
+}
+</style>
+</script>
+</body>
+</html>
