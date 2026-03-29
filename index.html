@@ -37,16 +37,24 @@ h1 { color: #58a6ff; margin-bottom: 4px; font-size: 1.6em; }
 .op .op-amount .main .arrow { color: #484f58; margin: 0 6px; }
 .op .op-amount .main .single { color: #79c0ff; }
 .op .op-meta { color: #8b949e; font-size: 12px; margin-top: 2px; }
-.op .op-meta a { color: #8b949e; text-decoration: none; font-family: monospace; font-size: 11px; }
-.op .op-meta a:hover { color: #58a6ff; text-decoration: underline; }
+.op .op-meta a { color: #58a6ff; text-decoration: none; font-family: monospace; font-size: 11px; }
+.op .op-meta a:hover { text-decoration: underline; }
 .op .op-usd { color: #8b949e; font-size: 12px; min-width: 70px; text-align: right; white-space: nowrap; }
 .loading { text-align: center; padding: 40px; color: #8b949e; }
 .footer { text-align: center; margin-top: 32px; padding-top: 16px; border-top: 1px solid #30363d; color: #484f58; font-size: 12px; }
 .footer a { color: #58a6ff; text-decoration: none; }
 @media (max-width: 600px) {
-  .op { flex-wrap: wrap; }
-  .op .op-type { width: auto; min-width: auto; }
-  .summary { flex-direction: column; }
+  .container { padding: 12px; }
+  h1 { font-size: 1.3em; }
+  .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .summary .card { min-width: 0; }
+  .op { flex-wrap: wrap; padding: 10px 12px; gap: 8px; }
+  .op .op-type { width: auto; min-width: auto; font-size: 11px; padding: 3px 8px; }
+  .op .op-amount { width: 100%; order: 2; }
+  .op .op-amount .main { font-size: 14px; white-space: normal; word-break: break-word; }
+  .op .op-usd { order: 1; }
+  .filters { gap: 6px; }
+  .filters button { padding: 5px 10px; font-size: 11px; }
 }
 </style>
 </head>
