@@ -30,6 +30,7 @@ h1 { color: #58a6ff; margin-bottom: 4px; font-size: 1.6em; }
 .op .op-type.swap { color: #d2a8ff; background: #1c1530; }
 .op .op-type.deposit { color: #3fb950; background: #0d2818; }
 .op .op-type.withdraw { color: #f85149; background: #2d1215; }
+.op .op-type { line-height: 1.3; }
 .op .op-amount { flex: 1; min-width: 0; }
 .op .op-amount .main { font-weight: 600; font-size: 15px; white-space: nowrap; }
 .op .op-amount .main .out-token { color: #f85149; }
@@ -206,10 +207,12 @@ function renderOp(op) {
   const date = formatDate(op.ts);
   const usd = op.usdAmt > 0.01 ? '$' + op.usdAmt.toFixed(2) : '';
   const txLink = `<a href="https://near.rocks/tx/${op.txId}" target="_blank" title="${op.txId}">${op.txId.slice(0,8)}...</a>`;
-  const who = op.counterparty ? `<span class="op-who">${op.type === 'deposit' ? 'from ' : op.type === 'withdraw' ? 'to ' : ''}<a href="https://near.rocks/account/${op.counterparty}" target="_blank" title="${op.counterparty}">${fmtAccount(op.counterparty)}</a></span>` : '';
+  const whoPrefix = op.type === 'deposit' ? 'from ' : op.type === 'withdraw' ? 'to ' : 'with ';
+  const who = op.counterparty ? `<span class="op-who">${whoPrefix}<a href="https://near.rocks/account/${op.counterparty}" target="_blank" title="${op.counterparty}">${fmtAccount(op.counterparty)}</a></span>` : '';
 
+  const typeLabels = { swap: 'Swap', deposit: '→ Intents', withdraw: '→ Wallet' };
   return `<div class="op">
-    <div class="op-type ${op.type}">${op.type}</div>
+    <div class="op-type ${op.type}">${typeLabels[op.type]}</div>
     <div class="op-amount">
       <div class="main">${op.label}${who ? ' ' + who : ''}</div>
       <div class="op-meta">${date}${date ? ' · ' : ''}${txLink}</div>
