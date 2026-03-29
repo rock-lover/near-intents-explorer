@@ -162,8 +162,9 @@ function renderTx(t) {
   const amt = parseFloat(t.human_amount || 0);
   const isIn = amt > 0;
   const asset = getAssetLabel(t);
-  const other = t.other_account_id || '?';
-  const named = isNamed(other);
+  const rawOther = t.other_account_id || '';
+  const other = rawOther || (isIn ? 'Deposit to Intents' : 'Withdraw from Intents');
+  const named = rawOther ? isNamed(rawOther) : true;
   const usd = t.usd_amount ? '$' + Math.abs(parseFloat(t.usd_amount)).toFixed(2) : '';
   const assetClass = asset === 'NEAR' || asset === 'wNEAR' ? 'near' : asset === 'USDC' || asset === 'USDT' ? 'usdc' : 'other';
   const date = formatDate(t);
@@ -176,7 +177,7 @@ function renderTx(t) {
     <div class="amount ${assetClass}" title="${formatAmount(t)} ${asset}">${formatAmount(t)} ${asset}</div>
     <div class="details">
       <div class="type">${getTypeLabel(t)}${date ? ' · ' + date : ''}${txLink ? ' · ' + txLink : ''}</div>
-      <div class="account ${named ? 'named' : ''}" title="${other}">${named ? other : other.slice(0,16) + '...'}</div>
+      <div class="account ${named ? 'named' : ''}" title="${rawOther || other}">${named ? other : rawOther.slice(0,16) + '...'}</div>
     </div>
     <div class="usd">${usd}</div>
   </div>`;
