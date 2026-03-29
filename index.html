@@ -36,6 +36,7 @@ h1 { color: #58a6ff; margin-bottom: 4px; font-size: 1.6em; }
 .op .op-amount .main .in-token { color: #3fb950; }
 .op .op-amount .main .arrow { color: #484f58; margin: 0 6px; }
 .op .op-amount .main .single { color: #79c0ff; }
+.op .op-who { color: #8b949e; font-size: 13px; font-weight: 400; }
 .op .op-meta { color: #8b949e; font-size: 12px; margin-top: 2px; }
 .op .op-meta a { color: #58a6ff; text-decoration: none; font-family: monospace; font-size: 11px; }
 .op .op-meta a:hover { text-decoration: underline; }
@@ -183,21 +184,32 @@ function groupIntoOps(transfers) {
       ? Math.max(...items.map(t => Math.abs(parseFloat(t.usd_amount || 0))))
       : items.reduce((s, t) => s + Math.abs(parseFloat(t.usd_amount || 0)), 0);
 
-    ops.push({ txId, type, label, ts, usdAmt, items });
+    // find counterparty from items
+    const others = items.map(t => t.other_account_id).filter(Boolean);
+    const counterparty = others.length ? others[0] : null;
+
+    ops.push({ txId, type, label, ts, usdAmt, counterparty, items });
   }
 
   return ops;
+}
+
+function fmtAccount(acc) {
+  if (!acc) return '';
+  if (isNamed(acc)) return acc;
+  return acc.slice(0, 8) + '...' + acc.slice(-4);
 }
 
 function renderOp(op) {
   const date = formatDate(op.ts);
   const usd = op.usdAmt > 0.01 ? '$' + op.usdAmt.toFixed(2) : '';
   const txLink = `<a href="https://near.rocks/tx/${op.txId}" target="_blank" title="${op.txId}">${op.txId.slice(0,8)}...</a>`;
+  const who = op.counterparty ? `<span class="op-who" title="${op.counterparty}">${op.type === 'deposit' ? 'from ' : op.type === 'withdraw' ? 'to ' : ''}${fmtAccount(op.counterparty)}</span>` : '';
 
   return `<div class="op">
     <div class="op-type ${op.type}">${op.type}</div>
     <div class="op-amount">
-      <div class="main">${op.label}</div>
+      <div class="main">${op.label}${who ? ' ' + who : ''}</div>
       <div class="op-meta">${date}${date ? ' · ' : ''}${txLink}</div>
     </div>
     <div class="op-usd">${usd}</div>
