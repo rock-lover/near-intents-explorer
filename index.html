@@ -243,6 +243,7 @@ async function search() {
 async function loadAllPages(account) {
   let token = resumeToken || null;
   while (true) {
+    showStatusBar('Loading... ' + allTransfers.length + ' transactions so far');
     try {
       const data = await fetchTransfers(account, token);
       const batch = data.transfers || [];
@@ -258,20 +259,27 @@ async function loadAllPages(account) {
       loading = false;
       document.getElementById('searchBtn').disabled = false;
       document.getElementById('searchBtn').textContent = 'Search';
-      const retryDiv = document.getElementById('retryBar');
-      if (retryDiv) retryDiv.remove();
-      const bar = document.createElement('div');
-      bar.id = 'retryBar';
-      bar.style.cssText = 'text-align:center;padding:12px;margin-top:8px;background:#2d1215;border-radius:8px;color:#f85149;';
-      bar.innerHTML = 'Rate limited — loaded ' + allTransfers.length + ' transactions so far. <button onclick="retryLoad()" style="margin-left:12px;padding:6px 16px;background:#238636;border:none;border-radius:6px;color:white;cursor:pointer;">Continue loading</button>';
-      document.getElementById('results').after(bar);
+      showStatusBar('Rate limited — loaded ' + allTransfers.length + ' transactions so far.', true);
       render();
       return;
     }
   }
   resumeToken = null;
-  const retryDiv = document.getElementById('retryBar');
-  if (retryDiv) retryDiv.remove();
+  showStatusBar(null);
+}
+
+function showStatusBar(message, showRetry) {
+  let bar = document.getElementById('statusBar');
+  if (!message) { if (bar) bar.remove(); return; }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'statusBar';
+    const summary = document.getElementById('summary');
+    summary.after(bar);
+  }
+  bar.style.cssText = 'text-align:center;padding:10px 16px;margin-bottom:12px;border-radius:8px;font-size:13px;' +
+    (showRetry ? 'background:#2d1215;color:#f85149;' : 'background:#1c2333;color:#8b949e;');
+  bar.innerHTML = message + (showRetry ? ' <button onclick="retryLoad()" style="margin-left:12px;padding:5px 14px;background:#238636;border:none;border-radius:6px;color:white;cursor:pointer;font-size:13px;">Continue loading</button>' : '');
 }
 
 async function retryLoad() {
