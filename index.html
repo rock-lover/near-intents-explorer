@@ -169,7 +169,7 @@ function renderTx(t) {
   const date = formatDate(t);
 
   const txHash = t.transaction_id || '';
-  const txLink = txHash ? `<a href="https://near.rocks/txn/${txHash}" target="_blank" class="tx-hash" title="${txHash}">${txHash.slice(0,8)}...</a>` : '';
+  const txLink = txHash ? `<a href="https://near.rocks/tx/${txHash}" target="_blank" class="tx-hash" title="${txHash}">${txHash.slice(0,8)}...</a>` : '';
 
   return `<div class="tx">
     <div class="direction ${isIn ? 'in' : 'out'}">${isIn ? 'IN' : 'OUT'}</div>
@@ -263,8 +263,10 @@ async function loadAllPages(account) {
       resumeToken = token;
       render();
       const wait = 20;
-      for (let i = wait; i > 0; i--) {
-        showStatusBar('Rate limited — loaded ' + allTransfers.length + ' transactions. Retrying in ' + i + 's...');
+      let skipWait = false;
+      window._retryNow = () => { skipWait = true; };
+      for (let i = wait; i > 0 && !skipWait; i--) {
+        showStatusBar('Rate limited — loaded ' + allTransfers.length + ' transactions. Retrying in ' + i + 's... <button onclick="window._retryNow()" style="margin-left:12px;padding:5px 14px;background:#238636;border:none;border-radius:6px;color:white;cursor:pointer;font-size:13px;">Retry now</button>');
         await new Promise(r => setTimeout(r, 1000));
       }
       showStatusBar('Retrying...');
