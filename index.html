@@ -187,8 +187,8 @@ function updateSummary() {
   allTransfers.forEach(t => {
     const amt = parseFloat(t.human_amount || 0);
     const asset = getAssetLabel(t);
-    if ((asset === 'NEAR' || asset === 'wNEAR') && amt > 0) nearIn += amt;
-    if ((asset === 'NEAR' || asset === 'wNEAR') && amt < 0) nearOut += Math.abs(amt);
+    if (asset === 'NEAR' && amt > 0) nearIn += amt;
+    if (asset === 'NEAR' && amt < 0) nearOut += Math.abs(amt);
     if (asset === 'USDC' && amt > 0) usdcIn += amt;
   });
   const spinner = loading ? ' ⏳' : '';
